@@ -1,0 +1,57 @@
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+
+# -------------------- STEP 1: Load Data --------------------
+df = pd.read_csv("/kaggle/input/insurancedata/insurance.csv")
+
+# -------------------- STEP 2: One-Hot Encoding --------------------
+df = pd.get_dummies(df, columns=["sex", "smoker", "region"], drop_first=True)
+
+# -------------------- STEP 3: Split Features & Target --------------------
+X = df.drop("charges", axis=1)
+y = df["charges"]
+
+# -------------------- STEP 4: Train-Test Split --------------------
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+# -------------------- STEP 5: Build Model --------------------
+model = Sequential([
+    Dense(32, activation='relu', input_dim=X_train.shape[1]),
+    Dense(16, activation='relu'),
+    Dense(1)
+])
+
+# -------------------- STEP 6: Compile Model --------------------
+model.compile(optimizer="adam", loss="mse")
+
+# -------------------- STEP 7: Train Model --------------------
+model.fit(X_train, y_train, epochs=50, batch_size=32, verbose=1)
+
+# -------------------- STEP 8: Evaluate --------------------
+loss = model.evaluate(X_test, y_test, verbose=0)
+print(f"\nTest Loss: {loss:.4f}")
+
+# -------------------- STEP 9: Predict for Hardcoded Values --------------------
+# Hardcoded input
+inp = {
+    "age": 29,
+    "bmi": 27.9,
+    "children": 2,
+    "sex_male": 1,        # 1 = male, 0 = female
+    "smoker_yes": 0,      # 1 = yes, 0 = no
+    "region_northwest": 0,
+    "region_southeast": 1,
+    "region_southwest": 0
+}
+
+# Maintain column order
+input_array = np.array([[inp[col] for col in X.columns]])
+
+# Prediction
+pred = model.predict(input_array)[0][0]
+print(f"\nPredicted Insurance Charge: ${pred:.2f}")
